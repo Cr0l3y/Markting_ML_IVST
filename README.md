@@ -159,13 +159,82 @@ Tratamento das Variáveis Categóricas
 
 Solução: One-Hot Encoding
 
-A técnica de One-Hot Encoding foi utilizada para transformar colunas categóricas em colunas numéricas, sem atribuir ordens falsas às categorias.
+- Utilizamos o One-Hot Encoder para transformar as colunas categóricas em colunas binárias.
 
-Cada categoria é transformada em uma nova coluna binária:
-
-1 indica a presença da característica.
-0 indica a ausência.
+- Observação: Para colunas com apenas duas categorias como inadimplencia e fez_emprestimo, usamos o parâmetro drop='if_binary' no OneHotEncoder, para evitar a criação de colunas redundantes (ex: apenas uma coluna onde 1 = sim e 0 = nao).
 
 
+        from sklearn.preprocessing import OneHotEncoder
 
+        encoder = OneHotEncoder(drop='if_binary')
+        x_encoded = encoder.fit_transform(x)
+        colunas = encoder.get_feature_names_out()
+
+
+- Armazenamos os nomes das colunas transformadas em uma variável (colunas) para manter controle sobre as novas variáveis geradas.
+
+- O encoder guarda o padrão dos dados, o que permite aplicá-lo a futuros dados de forma consistente.
+
+
+
+Transformação da Variável Alvo
+
+- A variável aderencia_investimento também precisa ser transformada, pois está em formato "sim"/"nao".
+
+- Utilizamos o LabelEncoder do Scikit-Learn:
+
+
+        from sklearn.preprocessing import LabelEncoder
+        label_encoder = LabelEncoder()
+        y = label_encoder.fit_transform(y)
+     Resultado: 1 = sim, 0 = nao
+
+
+🤖 Modelagem e Avaliação
+
+
+Divisão dos Dados:
+- Para avaliar o desempenho do modelo, não utilizamos todos os dados de uma vez.
+- Dividimos em dados de treino e dados de teste com train_test_split:
+
+        from sklearn.model_selection import train_test_split
+        x_treino, x_teste, y_treino, y_teste = train_test_split(x_encoded, y, test_size=0.3, random_state=42)
+
+
+Modelo 1: DummyClassifier
+- O DummyClassifier serve como uma baseline para avaliarmos o desempenho mínimo aceitável:
+
+
+        from sklearn.dummy import DummyClassifier
+        dummy = DummyClassifier(strategy='most_frequent')
+        dummy.fit(x_treino, y_treino)
+        score_dummy = dummy.score(x_teste, y_teste)
+    Resultado: 60,2% de acerto
+
+
+
+Modelo 2: Árvore de Decisão
+
+
+- O modelo de árvore de decisão compara os valores das colunas para tomar decisões de classificação.
+
+
+        from sklearn.tree import DecisionTreeClassifier
+
+        modelo_arvore = DecisionTreeClassifier()
+        modelo_arvore.fit(x_treino, y_treino)
+        score_arvore = modelo_arvore.score(x_teste, y_teste)
+    Resultado: 100% nos dados de treino
+
+O modelo decorou os dados, o que causa overfitting.
+- Aplicando Limite de Profundidade:
+
+
+
+        modelo_podado = DecisionTreeClassifier(max_depth=3)
+        modelo_podado.fit(x_treino, y_treino)
+        score_podado = modelo_podado.score(x_teste, y_teste)
+    Resultado: 71,6% de acerto
+
+Com a poda da árvore (limite de profundidade), o modelo generalizou melhor, evitando o overfitting.
 
