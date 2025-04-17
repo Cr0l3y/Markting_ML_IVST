@@ -1,84 +1,137 @@
-Texto traduzido no translate.google EN. - Texto em PT-BR 
-
-Text translated on translate.google EN. - Text in PT-BR 
-
-
-
 ***EN***
 
 # Project
 
+# Marketing Investment Classifier - Machine Learning Project (ENGLISH VERSION)
 
-Project: Analysis of Marketing Investment Data
+## 📊 Objective
+This project aims to classify customers who are likely to join a bank's marketing investment campaign using supervised machine learning algorithms.
 
-    📌 Objective
+---
 
-This project aims to analyze data related to marketing investments and understand patterns that can help in future strategic decisions.
+## 🔍 Initial Data Analysis
 
+- **Missing Values**: No null values found in the dataset.
+- **Data Consistency**: Some inconsistencies found in text format (e.g., uppercase/lowercase).
+- **Variable Types**:
+  - The target variable `aderencia_investimento` is categorical: **classification problem**.
+  - `inadimplencia` and `fez_emprestimo` only have "sim" (yes) and "nao" (no) values.
 
-    🔍 Initial Data Analysis
+---
 
-Null Values: After the initial verification, it was found that there are no null values ​​in the dataset, therefore, there is no need to treat this aspect.
+## 📊 Exploratory Data Analysis (EDA)
 
-Data Consistency:
+- Distribution of `aderencia_investimento`: 502 "sim", 766 "nao".
+- Bar charts for categorical features (`estado_civil`, `escolaridade`, etc.)
+- Summary of numerical variables:
+  - `idade`: from 19 to 87
+  - `saldo`: may contain negative values
 
--Some categorical columns present values ​​that can harm the analysis, such as categories written in different ways (e.g.: "Male", "male", "M").
+---
 
--There is also no guarantee that the numerical variables are within an acceptable range. For example, the variable "age" could contain negative or absurdly high values, which needs to be verified.
+## 🧹 Data Preprocessing
 
--The column "adherence_investment" is of the categorical type, which indicates that the problem is a classification problem and not a regression problem.
+### 1. Separating Features and Target
+```python
+x = dados.drop("aderencia_investimento", axis=1)
+y = dados["aderencia_investimento"]
+```
 
+### 2. One-Hot Encoding for Categorical Features
+- We used `drop='if_binary'` so that binary columns like `inadimplencia` and `fez_emprestimo` are converted to a single column: 0 for "nao", 1 for "sim".
+```python
+from sklearn.preprocessing import OneHotEncoder
+encoder = OneHotEncoder(drop='if_binary')
+x_encoded = encoder.fit_transform(x)
+colunas = encoder.get_feature_names_out()
+```
 
-    📊 Exploratory Data Analysis (EDA)
+### 3. Label Encoding for the Target Variable
+```python
+from sklearn.preprocessing import LabelEncoder
+label_encoder = LabelEncoder()
+y = label_encoder.fit_transform(y)  # 1 = sim, 0 = nao
+```
 
-Visualization with Graphs (Plotly)
+### 4. Train-Test Split
+```python
+from sklearn.model_selection import train_test_split
+x_treino, x_teste, y_treino, y_teste = train_test_split(x_encoded, y, test_size=0.3, random_state=42)
+```
 
-The exploratory analysis was conducted using interactive graphs with Plotly, starting with the target variable investment_adherence:
+---
 
-- Two categories were identified: "yes" (502 records) and "no" (766 records), with no signs of inconsistency.
+## 🤖 Modeling and Evaluation
 
+### ■ Dummy Classifier (Baseline)
+```python
+from sklearn.dummy import DummyClassifier
+dummy = DummyClassifier(strategy='most_frequent')
+dummy.fit(x_treino, y_treino)
+score_dummy = dummy.score(x_teste, y_teste)  # 60.2%
+```
 
-Analysis of Categorical Variables
+### ■ Decision Tree Classifier
+```python
+from sklearn.tree import DecisionTreeClassifier
+modelo_arvore = DecisionTreeClassifier()
+modelo_arvore.fit(x_treino, y_treino)
+```
+- Full tree: 100% accuracy (overfitting)
 
-- For variables such as marital_status, education, default, loan_taken, we used colored bar graphs based on the category (color='investment_adherence') to verify the integrity of the information.
+#### Limiting Depth to Prevent Overfitting
+```python
+modelo_podado = DecisionTreeClassifier(max_depth=3)
+modelo_podado.fit(x_treino, y_treino)
+score_podado = modelo_podado.score(x_teste, y_teste)  # 71.6%
+```
 
-- Although it is a repetitive analysis, it is essential to ensure that there are no outliers or typing problems.
+### ■ K-Nearest Neighbors (KNN)
 
-Analysis of Numerical Variables
+#### Scaling Data to Range 0-1
+```python
+from sklearn.preprocessing import MinMaxScaler
+scaler = MinMaxScaler()
+x_treino_scaled = scaler.fit_transform(x_treino.toarray())
+x_teste_scaled = scaler.transform(x_teste.toarray())
+```
 
-Using boxplots, we identified:
+#### Fitting KNN
+```python
+from sklearn.neighbors import KNeighborsClassifier
+knn = KNeighborsClassifier()
+knn.fit(x_treino_scaled, y_treino)
+score_knn = knn.score(x_teste_scaled, y_teste)  # 68%
+```
 
-- Age: ranges from 19 to 87 years old, with no negative values ​​or values ​​above 200 years old.
+---
 
-- Balance: has negative values, which is acceptable, since it indicates possible debts.
+## 📊 Accuracy Comparison
 
-Even with possible outliers, the data was kept, since it carries relevant information.
+| Model                  | Accuracy |
+|------------------------|----------|
+| DummyClassifier        | 60.2%    |
+| Decision Tree (max=3) | 71.6%    |
+| KNN                   | 68%      |
 
-Exploratory analysis is a crucial step in Machine Learning projects, since it allows a better understanding of the data and detecting possible inconsistencies before modeling.
+---
 
+## 📂 Saving Models with Pickle
+```python
+import pickle
+with open("modelo_onehotenc.pkl", "wb") as f:
+    pickle.dump(encoder, f)
+with open("modelo_arvore.pkl", "wb") as f:
+    pickle.dump(modelo_podado, f)
+```
 
-    🧹 Data Preparation
+---
 
-Separating Target Variable
-
-        x = dados.drop("investment_adherence", axis=1)
-        y = dados["investment_adherence"]
-
-Treatment of Categorical Variables
-
-- Many columns are in text format, which needs to be converted, since machine learning algorithms do not understand texts, only numbers.
-
-- Although it is possible to transform the texts into simple numbers (e.g.: 1 = married, 2 = single), this would create a false hierarchy between the categories, which can negatively affect the model.
-
-Solution: One-Hot Encoding
-
-The One-Hot Encoding technique was used to transform categorical columns into numeric columns, without assigning false orders to the categories.
-
-Each category is transformed into a new binary column:
-
-1 indicates the presence of the feature.
-
-0 indicates the absence.
+## 🚀 Summary
+- Successfully built our first classification model using decision trees.
+- Also implemented KNN to compare performances.
+- Best result came from the **Decision Tree with controlled depth**.
+- All encodings and models were saved using `pickle` for reuse in future predictions.
 
 
 
@@ -88,153 +141,126 @@ Each category is transformed into a new binary column:
 
 # Projeto
 
-Projeto: Análise de Dados de Investimentos em Marketing
-
-    📌 Objetivo
-
-Este projeto tem como objetivo analisar dados relacionados a investimentos em marketing e entender padrões que possam auxiliar em futuras decisões estratégicas.
-
-
-    🔍 Análise Inicial dos Dados
-
-Valores Nulos: Após a verificação inicial, foi constatado que não existem valores nulos no dataset, portanto, não há necessidade de tratamento nesse aspecto.
-
-Consistência dos Dados:
-
--Algumas colunas categóricas apresentam valores que podem prejudicar a análise, como categorias escritas de formas diferentes (ex: "Masculino", "masculino", "M").
-
--Também não há garantias de que as variáveis numéricas estejam dentro de uma faixa aceitável. Por exemplo, a variável "idade" poderia conter valores negativos ou absurdamente altos, o que precisa ser verificado.
-
--A coluna "aderencia_investimento" é do tipo categórico, o que indica que o problema se trata de classificação e não de regressão.
-
-
-    📊 Análise Exploratória dos Dados (EDA)
-
-
-Visualização com Gráficos (Plotly)
-
-
-A análise exploratória foi conduzida utilizando gráficos interativos com Plotly, começando pela variável alvo aderencia_investimento:
-
-- Duas categorias foram identificadas: "sim" (502 registros) e "nao" (766 registros), sem indícios de inconsistência.
-
-Análise das Variáveis Categóricas
-
-- Para as variáveis como estado_civil, escolaridade, inadimplencia, fez_emprestimo, utilizamos gráficos de barras coloridos com base na categoria (color='aderencia_investimento') para verificar a integridade das informações.
-
-- Apesar de ser uma análise repetitiva, ela é essencial para garantir que não há valores discrepantes ou problemas de digitação.
-
-
-Análise das Variáveis Numéricas
-
-Com o uso de boxplots, identificamos:
-
-- Idade: varia de 19 a 87 anos, sem valores negativos ou acima de 200 anos.
-
-- Saldo: possui valores negativos, o que é aceitável, já que indica possíveis dívidas.
-
-
-Mesmo com possíveis outliers, os dados foram mantidos, pois carregam informações relevantes.
-
-A análise exploratória é uma etapa crucial em projetos de Machine Learning, pois permite entender melhor os dados e detectar possíveis inconsistências antes da modelagem.
-
-
-
-
-    🧹 Preparação dos Dados
-
-Separando Variável Alvo
-
-        x = dados.drop("aderencia_investimento", axis=1)
-        y = dados["aderencia_investimento"]
-
-
-Tratamento das Variáveis Categóricas
-
-- Muitas colunas estão em formato textual, o que precisa ser convertido, já que algoritmos de machine learning não compreendem textos, apenas números.
-
-- Embora seja possível transformar os textos em números simples (ex: 1 = casado, 2 = solteiro), isso criaria uma falsa hierarquia entre as categorias, o que pode afetar negativamente o modelo.
-
-
-
-Solução: One-Hot Encoding
-
-- Utilizamos o One-Hot Encoder para transformar as colunas categóricas em colunas binárias.
-
-- Observação: Para colunas com apenas duas categorias como inadimplencia e fez_emprestimo, usamos o parâmetro drop='if_binary' no OneHotEncoder, para evitar a criação de colunas redundantes (ex: apenas uma coluna onde 1 = sim e 0 = nao).
-
-
-        from sklearn.preprocessing import OneHotEncoder
-
-        encoder = OneHotEncoder(drop='if_binary')
-        x_encoded = encoder.fit_transform(x)
-        colunas = encoder.get_feature_names_out()
-
-
-- Armazenamos os nomes das colunas transformadas em uma variável (colunas) para manter controle sobre as novas variáveis geradas.
-
-- O encoder guarda o padrão dos dados, o que permite aplicá-lo a futuros dados de forma consistente.
-
-
-
-Transformação da Variável Alvo
-
-- A variável aderencia_investimento também precisa ser transformada, pois está em formato "sim"/"nao".
-
-- Utilizamos o LabelEncoder do Scikit-Learn:
-
-
-        from sklearn.preprocessing import LabelEncoder
-        label_encoder = LabelEncoder()
-        y = label_encoder.fit_transform(y)
-     Resultado: 1 = sim, 0 = nao
-
-
-🤖 Modelagem e Avaliação
-
-
-Divisão dos Dados:
-- Para avaliar o desempenho do modelo, não utilizamos todos os dados de uma vez.
-- Dividimos em dados de treino e dados de teste com train_test_split:
-
-        from sklearn.model_selection import train_test_split
-        x_treino, x_teste, y_treino, y_teste = train_test_split(x_encoded, y, test_size=0.3, random_state=42)
-
-
-Modelo 1: DummyClassifier
-- O DummyClassifier serve como uma baseline para avaliarmos o desempenho mínimo aceitável:
-
-
-        from sklearn.dummy import DummyClassifier
-        dummy = DummyClassifier(strategy='most_frequent')
-        dummy.fit(x_treino, y_treino)
-        score_dummy = dummy.score(x_teste, y_teste)
-    Resultado: 60,2% de acerto
-
-
-
-Modelo 2: Árvore de Decisão
-
-
-- O modelo de árvore de decisão compara os valores das colunas para tomar decisões de classificação.
-
-
-        from sklearn.tree import DecisionTreeClassifier
-
-        modelo_arvore = DecisionTreeClassifier()
-        modelo_arvore.fit(x_treino, y_treino)
-        score_arvore = modelo_arvore.score(x_teste, y_teste)
-    Resultado: 100% nos dados de treino
-
-O modelo decorou os dados, o que causa overfitting.
-- Aplicando Limite de Profundidade:
-
-
-
-        modelo_podado = DecisionTreeClassifier(max_depth=3)
-        modelo_podado.fit(x_treino, y_treino)
-        score_podado = modelo_podado.score(x_teste, y_teste)
-    Resultado: 71,6% de acerto
-
-Com a poda da árvore (limite de profundidade), o modelo generalizou melhor, evitando o overfitting.
-
+# Classificador de Investimentos em Marketing - Projeto de Aprendizado de Máquina (VERSÃO EM INGLÊS)
+
+## 📊 Objetivo
+Este projeto visa classificar clientes com probabilidade de participar de uma campanha de investimento em marketing de um banco usando algoritmos supervisionados de aprendizado de máquina.
+---
+## 🔍 Análise Inicial de Dados
+
+- **Valores Ausentes**: Nenhum valor nulo encontrado no conjunto de dados.
+- **Consistência dos Dados**: Algumas inconsistências encontradas no formato do texto (por exemplo, letras maiúsculas/minúsculas).
+- **Tipos de Variáveis**:
+    - A variável alvo `aderencia_investimento` é categórica: **problema de classificação**.
+    - `inadimplencia` e `fez_emprestimo` só possuem valores "sim" (sim) e "nao" (não).
+
+---
+## 📊 Análise Exploratória de Dados (EDA)
+
+- Distribuição de `aderencia_investimento`: 502 "sim", 766 "nao".
+- Gráficos de barras para características categóricas (`estado_civil`, `escolaridade`, etc.)
+- Resumo das variáveis ​​numéricas:
+    - `idade`: de 19 a 87
+    - `saldo`: pode conter valores negativos
+
+---
+## 🧹 Pré-processamento de dados
+
+### 1. Separando Recursos e Alvo
+```píton
+x = dados.drop("aderência_investimento", eixo=1)
+y = dados["adesão_investimento"]
+```
+
+### 2. Codificação One-Hot para Recursos Categóricos
+- Usamos `drop='if_binary'` para que colunas binárias como `inadimplencia` e `fez_emprestimo` sejam convertidas em uma única coluna: 0 para "nao", 1 para "sim".
+```python
+from sklearn.preprocessing import OneHotEncoder
+encoder = OneHotEncoder(drop='if_binary')
+x_encoded = encoder.fit_transform(x)
+colunas = encoder.get_feature_names_out()
+```
+
+### 3. Codificação de rótulo para a variável de destino
+```python
+from sklearn.preprocessing import LabelEncoder
+label_encoder = LabelEncoder()
+y = label_encoder.fit_transform(y)  # 1 = sim, 0 = nao
+```
+
+### 4. Divisão de Treinamento e Teste
+```python
+from sklearn.model_selection import train_test_split
+x_treino, x_teste, y_treino, y_teste = train_test_split(x_encoded, y, test_size=0.3, random_state=42)
+```
+
+---
+
+## 🤖 Modelagem e Avaliação
+
+### ■ Classificador Dummy (Linha de Base)
+```python
+from sklearn.dummy import DummyClassifier
+dummy = DummyClassifier(strategy='most_frequent')
+dummy.fit(x_treino, y_treino)
+score_dummy = dummy.score(x_teste, y_teste)  # 60.2%
+```
+
+### ■ Classificador de Árvore de Decisão
+```python
+from sklearn.tree import DecisionTreeClassifier
+modelo_arvore = DecisionTreeClassifier()
+modelo_arvore.fit(x_treino, y_treino)
+```
+- Árvore completa: 100% de precisão (overfitting)
+
+#### Limitando a profundidade para evitar overfitting
+```python
+modelo_podado = DecisionTreeClassifier(max_depth=3)
+modelo_podado.fit(x_treino, y_treino)
+score_podado = modelo_podado.score(x_teste, y_teste)  # 71.6%
+```
+### ■ K-Vizinhos Mais Próximos (KNN)
+
+#### Escalando Dados para o Intervalo de 0 a 1
+```python
+from sklearn.preprocessing import MinMaxScaler
+scaler = MinMaxScaler()
+x_treino_scaled = scaler.fit_transform(x_treino.toarray())
+x_teste_scaled = scaler.transform(x_teste.toarray())
+```
+#### Adaptação KNN
+```python
+from sklearn.neighbors import KNeighborsClassifier
+knn = KNeighborsClassifier()
+knn.fit(x_treino_scaled, y_treino)
+score_knn = knn.score(x_teste_scaled, y_teste)  # 68%
+```
+
+---
+
+## 📊 Comparação de Precisão
+
+| Model                  | Accuracy |
+|------------------------|----------|
+| DummyClassifier        | 60.2%    |
+| Decision Tree (max=3) | 71.6%    |
+| KNN                   | 68%      |
+
+---
+
+## 📂 Salvando modelos com Pickle
+```python
+import pickle
+with open("modelo_onehotenc.pkl", "wb") as f:
+    pickle.dump(encoder, f)
+with open("modelo_arvore.pkl", "wb") as f:
+    pickle.dump(modelo_podado, f)
+```
+
+---
+## 🚀 Resumo
+- Construímos com sucesso nosso primeiro modelo de classificação usando árvores de decisão.
+- Também implementamos KNN para comparar desempenhos.
+- O melhor resultado veio da **Árvore de Decisão com profundidade controlada**.
+- Todas as codificações e modelos foram salvos usando `pickle` para reutilização em previsões futuras.
